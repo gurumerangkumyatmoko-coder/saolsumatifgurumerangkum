@@ -1,0 +1,6 @@
+{
+  "name": "Penyusun & Unduh Soal Sumatif SD",
+  "description": "Aplikasi lengkap untuk menyusun, mengedit, menggenerate, dan mengunduh soal asesmen sumatif SD semua kelas dan mata pelajaran lengkap dengan stimulus gambar, kunci jawaban, dan format Word DOCX siap cetak.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
