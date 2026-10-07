@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Sparkles,
   Loader2,
@@ -7,9 +7,12 @@ import {
   HelpCircle,
   Image as ImageIcon,
   Check,
-  X
+  X,
+  BookOpen,
+  Edit3
 } from 'lucide-react';
 import { ExamHeader, GenerateExamRequest, AnyQuestion } from '../types/exam';
+import { getCurriculumTopics } from '../utils/curriculumTopics';
 
 interface AIGeneratorModalProps {
   header: ExamHeader;
@@ -28,6 +31,17 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
   const [capaianPembelajaran, setCapaianPembelajaran] = useState('');
   const [tingkatKesulitan, setTingkatKesulitan] = useState<'Mudah' | 'Sedang' | 'HOTS / Analisis Kognitif'>('Sedang');
   const [sertakanGambar, setSertakanGambar] = useState(true);
+
+  // Sync with header.materiPokok when opened
+  useEffect(() => {
+    if (header.materiPokok) {
+      setMateriPokok(header.materiPokok);
+    }
+  }, [header.materiPokok, isOpen]);
+
+  const availableTopics = useMemo(() => {
+    return getCurriculumTopics(header.mataPelajaran, header.kelas);
+  }, [header.mataPelajaran, header.kelas]);
 
   // Exact 5 question types requested
   const [jumlahPG, setJumlahPG] = useState(2);
@@ -152,18 +166,160 @@ export const AIGeneratorModal: React.FC<AIGeneratorModalProps> = ({
             </span>
           </div>
 
-          {/* Form Topik */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
-              Topik Pokok / Bab / Materi Pembelajaran *
-            </label>
-            <input
-              type="text"
-              value={materiPokok}
-              onChange={(e) => setMateriPokok(e.target.value)}
-              placeholder="Contoh: Fotosintesis & Rantai Makanan Sawah, atau Luas Pecahan & Bangun Datar"
-              className="w-full text-sm p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-hidden font-medium"
-            />
+          {/* Section Materi Pokok: Pilihan Kurikulum Merdeka + Kolom Isian Manual */}
+          <div className="space-y-4">
+            <div className="border-b border-slate-100 pb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+              <div>
+                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                  Topik Pokok / Bab / Materi Pembelajaran *
+                </h4>
+                <p className="text-[11px] text-slate-500">
+                  Pilih bab Kurikulum Merdeka di bawah, ATAU isi/ketik materi pokok secara manual pada kolom isian.
+                </p>
+              </div>
+              <span className="text-[11px] text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md font-semibold border border-blue-200 inline-flex items-center gap-1 self-start sm:self-auto shrink-0">
+                <Sparkles className="w-3 h-3 text-blue-600" />
+                {header.mataPelajaran} • Kelas {header.kelas} SD
+              </span>
+            </div>
+
+            {/* Bagian 1: Pilihan Bab Kurikulum Merdeka (Otomatis) */}
+            <div className="bg-blue-50/40 border border-blue-200/80 rounded-xl p-3.5 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
+                  <BookOpen className="w-3.5 h-3.5 text-blue-600" />
+                  <span>1. Pilihan Bab Resmi Kurikulum Merdeka:</span>
+                </label>
+                <span className="text-[10px] text-blue-600 font-medium bg-blue-100/60 px-1.5 py-0.5 rounded">
+                  {availableTopics.length} Bab Tersedia
+                </span>
+              </div>
+
+              {/* Dropdown Bab Kurikulum Merdeka */}
+              <div className="flex items-center gap-2">
+                <select
+                  value={availableTopics.some((t) => t.title === materiPokok) ? materiPokok : ''}
+                  onChange={(e) => {
+                    const selectedTitle = e.target.value;
+                    if (selectedTitle) {
+                      setMateriPokok(selectedTitle);
+                      const matched = availableTopics.find((t) => t.title === selectedTitle);
+                      if (matched && matched.subtopics && matched.subtopics.length > 0 && !capaianPembelajaran) {
+                        setCapaianPembelajaran(`Peserta didik mampu memahami dan menganalisis ${matched.subtopics.join(', ')}.`);
+                      }
+                    }
+                  }}
+                  className="w-full text-xs sm:text-sm p-2.5 rounded-xl border border-blue-300 bg-white hover:bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-hidden cursor-pointer"
+                >
+                  <option value="">
+                    -- 📌 Klik di sini untuk memilih bab ({header.mataPelajaran} Kelas {header.kelas}) --
+                  </option>
+                  <optgroup label={`Semester 1 (Ganjil) - ${header.mataPelajaran} Kelas ${header.kelas}`}>
+                    {availableTopics
+                      .filter((t) => t.semester === 1)
+                      .map((t) => (
+                        <option key={t.id} value={t.title}>
+                          {t.title}
+                        </option>
+                      ))}
+                  </optgroup>
+                  <optgroup label={`Semester 2 (Genap) - ${header.mataPelajaran} Kelas ${header.kelas}`}>
+                    {availableTopics
+                      .filter((t) => t.semester === 2)
+                      .map((t) => (
+                        <option key={t.id} value={t.title}>
+                          {t.title}
+                        </option>
+                      ))}
+                  </optgroup>
+                </select>
+              </div>
+
+              {/* Quick-Pick Topic Chips */}
+              {availableTopics.length > 0 && (
+                <div className="space-y-1 pt-1">
+                  <div className="text-[11px] text-slate-600 font-medium">
+                    Atau klik tombol bab di bawah ini:
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-2 bg-white rounded-lg border border-blue-100">
+                    {availableTopics.map((topic) => {
+                      const isSelected = materiPokok === topic.title;
+                      return (
+                        <button
+                          key={topic.id}
+                          type="button"
+                          onClick={() => {
+                            setMateriPokok(topic.title);
+                            if (topic.subtopics && topic.subtopics.length > 0 && !capaianPembelajaran) {
+                              setCapaianPembelajaran(`Peserta didik mampu memahami dan menganalisis ${topic.subtopics.join(', ')}.`);
+                            }
+                          }}
+                          className={`text-left text-xs px-2.5 py-1.5 rounded-lg border transition cursor-pointer flex items-center gap-1.5 ${
+                            isSelected
+                              ? 'bg-blue-600 text-white border-blue-700 shadow-xs font-semibold ring-1 ring-blue-500'
+                              : 'bg-slate-50 hover:bg-blue-50 text-slate-700 border-slate-200 hover:border-blue-300'
+                          }`}
+                        >
+                          <span
+                            className={`text-[10px] px-1 py-0.2 rounded font-bold ${
+                              isSelected ? 'bg-blue-800 text-white' : 'bg-slate-200 text-slate-600'
+                            }`}
+                          >
+                            Smt {topic.semester}
+                          </span>
+                          <span className="truncate max-w-[260px] sm:max-w-none">{topic.title}</span>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-blue-200 shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Bagian 2: Kolom Isian Manual Materi Pokok */}
+            <div className="bg-amber-50/40 border border-amber-200/80 rounded-xl p-3.5 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <Edit3 className="w-3.5 h-3.5 text-amber-600" />
+                  <span>2. Kolom Isian Manual Materi Pokok (Bisa Diisi / Diketik Bebas):</span>
+                </label>
+                {materiPokok && (
+                  <button
+                    type="button"
+                    onClick={() => setMateriPokok('')}
+                    className="text-[11px] text-red-600 hover:text-red-700 hover:underline cursor-pointer"
+                  >
+                    Kosongkan Kolom
+                  </button>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <input
+                  type="text"
+                  list="ai-curriculum-topics-datalist"
+                  value={materiPokok}
+                  onChange={(e) => setMateriPokok(e.target.value)}
+                  placeholder="Ketik topik materi secara manual di sini (Contoh: Bab 1: Fotosintesis & Rantai Makanan Sawah, atau Topik Gabungan Bab 1 dan Bab 2)..."
+                  className="w-full text-xs sm:text-sm p-3 rounded-lg border border-amber-300 bg-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-hidden font-medium text-slate-900 shadow-2xs"
+                />
+                <datalist id="ai-curriculum-topics-datalist">
+                  {availableTopics.map((t) => (
+                    <option key={t.id} value={t.title} />
+                  ))}
+                </datalist>
+
+                <div className="text-[11px] text-slate-600 flex items-center justify-between">
+                  <span>
+                    💡 <em>AI akan menyusun soal sesuai dengan teks pada kolom manual ini.</em>
+                  </span>
+                  <span className="font-semibold text-slate-500 shrink-0">
+                    {materiPokok.length} karakter
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Form CP/TP (Opsional) */}

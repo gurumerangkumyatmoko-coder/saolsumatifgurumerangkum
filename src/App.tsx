@@ -12,6 +12,7 @@ import { AIGeneratorModal } from './components/AIGeneratorModal';
 import { PrintPdfModal } from './components/PrintPdfModal';
 import { PrintAllSections } from './components/PrintAllSections';
 import { exportExamToDocx } from './utils/docxExport';
+import { getCurriculumTopics } from './utils/curriculumTopics';
 import {
   FileText,
   Sparkles,
@@ -219,8 +220,56 @@ export default function App() {
                 <div>• Satuan Pendidikan: <span className="font-semibold">{exam.header.namaSekolah}</span></div>
                 <div>• Mata Pelajaran: <span className="font-semibold text-blue-700">{exam.header.mataPelajaran}</span></div>
                 <div>• Jenjang: <span className="font-semibold">Kelas {exam.header.kelas} SD ({exam.header.fase})</span></div>
-                <div>• Topik/Bab: <span className="font-semibold">{exam.header.materiPokok || 'Belum diisi'}</span></div>
+                <div>• Topik/Bab: <span className="font-semibold text-slate-900">{exam.header.materiPokok || 'Belum diisi (Pilih di bawah)'}</span></div>
               </div>
+
+              {/* Pilihan Cepat Topik Kurikulum Merdeka */}
+              {(() => {
+                const aiTopics = getCurriculumTopics(exam.header.mataPelajaran, exam.header.kelas);
+                return (
+                  <div className="max-w-2xl mx-auto text-left space-y-1.5 pt-1">
+                    <div className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                        Pilihan Cepat Bab Kurikulum Merdeka ({exam.header.mataPelajaran} - Kelas {exam.header.kelas}):
+                      </span>
+                      <span className="text-[11px] text-blue-600 font-medium">Klik untuk langsung pilih &amp; buka form</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-2 bg-slate-50 border border-slate-200 rounded-2xl">
+                      {aiTopics.map((top) => {
+                        const isSelected = exam.header.materiPokok === top.title;
+                        return (
+                          <button
+                            key={top.id}
+                            type="button"
+                            onClick={() => {
+                              setExam((prev) => ({
+                                ...prev,
+                                header: { ...prev.header, materiPokok: top.title }
+                              }));
+                              setIsAiModalOpen(true);
+                            }}
+                            className={`text-left text-xs px-2.5 py-1.5 rounded-lg border transition cursor-pointer flex items-center gap-1.5 ${
+                              isSelected
+                                ? 'bg-blue-600 text-white border-blue-700 font-semibold shadow-xs'
+                                : 'bg-white hover:bg-blue-50 text-slate-700 border-slate-200 hover:border-blue-300'
+                            }`}
+                          >
+                            <span
+                              className={`text-[10px] px-1 py-0.2 rounded font-bold ${
+                                isSelected ? 'bg-blue-800 text-white' : 'bg-slate-100 text-slate-600'
+                              }`}
+                            >
+                              Smt {top.semester}
+                            </span>
+                            <span className="truncate max-w-[260px] sm:max-w-none">{top.title}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
                 <button
