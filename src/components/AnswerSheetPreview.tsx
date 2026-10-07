@@ -34,10 +34,10 @@ export const AnswerSheetPreview: React.FC<AnswerSheetPreviewProps> = ({
         <div className="flex items-center gap-2">
           <button
             onClick={onPrint}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 shadow-2xs transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-blue-700 bg-blue-50 border border-blue-300 rounded-lg hover:bg-blue-100 shadow-2xs transition cursor-pointer"
           >
-            <Printer className="w-3.5 h-3.5 text-slate-600" />
-            Cetak Lembar Jawab
+            <Printer className="w-3.5 h-3.5 text-blue-600" />
+            Cetak / Simpan PDF
           </button>
           <button
             onClick={onDownloadLjkDocx}

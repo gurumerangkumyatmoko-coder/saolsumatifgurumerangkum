@@ -77,13 +77,15 @@ export const PrintPdfModal: React.FC<PrintPdfModalProps> = ({
     setIsGeneratingPdf(true);
     setDownloadSuccessNotice(null);
 
-    // Switch to corresponding tab first if single target so element is rendered
+    // Switch to corresponding tab first so element is rendered
     if (selectedTarget === 'questions') {
       setActiveTab('preview');
     } else if (selectedTarget === 'keys') {
       setActiveTab('keys');
     } else if (selectedTarget === 'ljk') {
       setActiveTab('ljk');
+    } else if (selectedTarget === 'all') {
+      setActiveTab('all');
     }
 
     // Give react time to mount container
@@ -102,7 +104,7 @@ export const PrintPdfModal: React.FC<PrintPdfModalProps> = ({
       const opt = {
         margin: [10, 15, 12, 15] as [number, number, number, number],
         filename,
-        image: { type: 'jpeg', quality: 0.98 },
+        image: { type: 'jpeg' as const, quality: 0.98 },
         html2canvas: {
           scale: 2,
           useCORS: true,
